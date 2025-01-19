@@ -1,6 +1,5 @@
-from flask import Flask, Blueprint, request, current_app
+from flask import Flask, Blueprint, jsonify, request, current_app
 import json
-import jsonify
 import faiss
 from .helpers_main import *
 
@@ -49,10 +48,14 @@ def home():
 def update():
     # get data from json request
     data = request.json
+    print(data)
     songName = data.get("song_name")
     userPrefVector = data.get("preference_vector")
     liked = data.get("liked_status")
-    
+    print(songName)
+    print(userPrefVector)
+    print(liked)
+
     # ensure prefVector is sent over
     if not userPrefVector or not isinstance(userPrefVector, list):
         return jsonify({"error": "Invalid or missing user preference vector"}), 400
@@ -61,7 +64,10 @@ def update():
     
     # get liked/disliked song as feature vector 
     songFeatureVec = songNameToVector(songName, current_app.config["JSON_FILE_PATH"])
-    userPrefVector = np.array(userPrefVector)
+
+    # normalize song feature vector
+    songFeatureVec = Normalizer().fit_transform(songFeatureVec)[0].reshape(1, -1)
+
 
     # update and normalize user preference vector
     if liked == True:
@@ -69,8 +75,9 @@ def update():
     else:
         userPrefVector -= songFeatureVec
 
-    userPrefVector = Normalizer().fit_transform([userPrefVector])[0]
-
+    userPrefVector = Normalizer().fit_transform(userPrefVector)[0]
+    print("updated pref vector" + str(userPrefVector))
+    
     # return updated preference vector
     return jsonify({"updated_preference_vector": userPrefVector.tolist() })
 
@@ -86,16 +93,17 @@ def recomendation():
     data = request.json
     userPrefVector = data.get("preference_vector")
     numPlayedSongs = data.get("num_played_songs", 0)
-    
+    print("user preference vector: ", userPrefVector)
+    print("num played songs: ", numPlayedSongs)
+
     # ensure pref vector exists
     if not userPrefVector or not isinstance(userPrefVector, list):
         return jsonify({"error": "Invalid or missing user preference vector"}), 400
     
-    
     # initiaze k val : k = num recs to find in index
     k = 2
     if numPlayedSongs > 2:
-        k = numPlayedSongs
+        k = k +numPlayedSongs
     
     if k > len(current_app.config["SONG_DB"]):
         k = len(current_app.config["SONG_DB"])
@@ -139,6 +147,7 @@ def coldStart():
     randomSongIDX = np.random.randint(0, songDBsize)
     
     randomSong = songDB[randomSongIDX]
+    print("cold start song given")
     return jsonify({
         "title": randomSong["title"],
         "artist": randomSong["artist"]

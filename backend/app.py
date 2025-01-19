@@ -1,4 +1,5 @@
 from flask import Flask, blueprints
+from flask_cors import CORS
 import json
 from faiss_rec.faiss_main import init_faiss, init_song_vec_DB, init_songDB, faiss_bp
 
@@ -6,6 +7,7 @@ json_file_path = "full_drake_song_metadata.json"
 
 def create_app(json_file_path):
     app = Flask(__name__)
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     # init faiss index on app start
     app.config["SONG_DB"] = init_songDB(json_file_path)

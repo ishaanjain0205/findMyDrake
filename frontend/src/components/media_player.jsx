@@ -8,8 +8,86 @@ import playBtn from "../assets/play.svg"
 import forwardBtn from "../assets/fastforward.svg"
 import axios from "axios";
 
+const api = axios.create({
+    baseURL: "http://127.0.0.1:5000/",
+  });
+
+  
 const media_player = () => {
 
+    const [songTitle, setSongTitle] = useState("Loading...");
+    const [artist, setArtist] = useState("Loading...");
+    const [userPreferenceVector, setUserPreferenceVector] = useState([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    const [numSongsPlayed, setNumSongsPlayed] = useState(0);
+    const [songsPlayed, setSongsPlayed] = useState(new Set());
+
+    useEffect (() => {
+        const coldStart = async () => {
+            try {
+                const response = await api.get("faiss/coldStart");
+                console.log("cold start succesful")
+                setSongTitle(response.data.title)
+                setArtist(response.data.artist)
+                setNumSongsPlayed(1)
+                setSongsPlayed(new Set([response.data.title]))
+            } catch(error){
+                console.error("Error cold starting");
+            }
+        }
+
+        coldStart();
+    }, [])
+
+    const updatePreferenceVector = (newVector) => {
+        setUserPreferenceVector(newVector)
+
+        fetchRecommendation(newVector)
+    }
+
+    const updateNumSongsPlayed = () => {
+        setNumSongsPlayed(numSongsPlayed + 1)
+    }
+
+    const updateSongsPlayed = (song) => {
+        setSongsPlayed((prev) => new Set([...prev, song]));
+    }
+
+    const fetchRecommendation = async (newVector) => {
+        try {
+            const payLoad = {
+                preference_vector: newVector,
+                num_played_songs: numSongsPlayed
+            }
+            console.log("Requesting recommendations with payload" + payLoad)
+            const response = await api.post("faiss/recomendation", payLoad)
+            console.log("Recommendation fetched")
+
+            const newRecs = response.data.recommendations
+            let nextSong = newRecs[0]
+            
+            for(const rec of newRecs){
+                if(!songsPlayed.has(rec.title)){
+                    nextSong = rec
+                    break
+                }
+            }
+
+            if(nextSong){
+                setSongTitle(nextSong.title)
+                setArtist(nextSong.artist)
+                updateSongsPlayed(nextSong.title)
+                updateNumSongsPlayed()
+
+                console.log("New song recommended: " + nextSong.title)
+                console.log("Played songs: ", songsPlayed)
+                console.log("Number of songs played: ", numSongsPlayed)
+            } else {
+                console.log("No new songs to recommend")
+            }
+        } catch (error) {
+            console.error("Error fetching recommendations", error)
+        }
+    }
 
     let progressPercentage = 50
     return (
@@ -18,7 +96,12 @@ const media_player = () => {
             <div className="bg-black h-fit grid grid-cols-3 items-center justify-center ">
 
                 <div className = "flex justify-end items-end mr-[8vw]">
-                    <DislikeBtn className="h-[10vw] w-[10vw]"/>
+                    <DislikeBtn  
+                    api = {api}
+                    songName = {songTitle}
+                    artist = {artist}
+                    userPrefVector = {userPreferenceVector}
+                    updateUserPreferenceVector = {updatePreferenceVector}/>
                 </div>
 
                 <div className = "flex justify-center items-center " >
@@ -26,7 +109,13 @@ const media_player = () => {
                 </div>
 
                 <div className = "flex justify-start items-center ml-[8vw]">
-                    <LikeBtn/>
+                    <LikeBtn 
+                    api = {api}
+                    songName = {songTitle}
+                    artist = {artist}
+                    userPrefVector = {userPreferenceVector}
+                    updateUserPreferenceVector = {updatePreferenceVector}
+                    />
                 </div>
 
             </div>
@@ -34,10 +123,10 @@ const media_player = () => {
             {/* 2 ROWS: song name, artist */}
             <div className="grid grid-rows-2 gap-0 h-fit">
                 <div className="flex items-center justify-center text-3xl font-bold text-white text-[2vw]">
-                    <h1 className="m-0">Hold On We're Going Home</h1>
+                    <h1 className="m-0">{songTitle}</h1>
                 </div>
                 <div className="flex items-center justify-center text-white text-[1.5vw]">
-                    <h1 className="m-0">Drake</h1>
+                    <h1 className="m-0">{artist}</h1>
                 </div>
             </div>
 

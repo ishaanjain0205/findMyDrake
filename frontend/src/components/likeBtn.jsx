@@ -1,7 +1,7 @@
 import likeButton from '../assets/likeButton.svg'
 
 const likeBtn = ({api, songName, userPrefVector, updateUserPreferenceVector}) => {
-    const handleDislike = async () => {
+    const handleLike = async () => {
         try {
             const payLoad = {
                 song_name: songName,
@@ -22,7 +22,7 @@ const likeBtn = ({api, songName, userPrefVector, updateUserPreferenceVector}) =>
 
     return (
         <div>
-            <img src={likeButton} className='h-[10vw] w-[10vw] hover:opacity-70' onClick={handleDislike}></img>
+            <img src={likeButton} className='h-[10vw] w-[10vw] hover:opacity-70' onClick={handleLike}></img>
         </div>
     )
 }

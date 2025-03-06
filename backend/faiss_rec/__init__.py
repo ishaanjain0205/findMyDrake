@@ -1,8 +1,7 @@
 # from flask import Blueprint, current_app
 # import faiss
 # import numpy as np
-# from .helpers import *
-# import faiss
+# from helpers_main import *
 # import requests
 
 # faiss_bp = Blueprint('faiss', __name__)

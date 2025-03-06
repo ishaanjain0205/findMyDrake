@@ -82,7 +82,7 @@ const media_player = () => {
                 console.log("Played songs: ", songsPlayed)
                 console.log("Number of songs played: ", numSongsPlayed)
             } else {
-                console.log("No new songs to recommend")
+                console.log("No new songs to recommend.")
             }
         } catch (error) {
             console.error("Error fetching recommendations", error)
